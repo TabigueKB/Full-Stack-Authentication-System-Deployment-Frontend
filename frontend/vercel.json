@@ -1,0 +1,9 @@
+{
+  "outputDirectory": "dist/auth-system-frontend/browser",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
