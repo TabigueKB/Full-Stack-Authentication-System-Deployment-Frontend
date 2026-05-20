@@ -10,6 +10,8 @@ export class RegisterComponent implements OnInit {
     form!: FormGroup;
     loading = false;
     submitted = false;
+    showPassword = false; 
+    showConfirmPassword = false;
 
     constructor(
         private formBuilder: FormBuilder,

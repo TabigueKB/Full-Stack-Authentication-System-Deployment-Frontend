@@ -10,6 +10,7 @@ export class LoginComponent implements OnInit {
     form!: FormGroup;
     loading = false;
     submitted = false;
+    showPassword = false; 
     errorMessage = '';
 
     constructor(
