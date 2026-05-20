@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, NgZone } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { first } from 'rxjs/operators';
@@ -10,15 +10,17 @@ export class LoginComponent implements OnInit {
     form!: FormGroup;
     loading = false;
     submitted = false;
-    showPassword = false; 
-    errorMessage = '';
+    showPassword = false;
+    errorMessage = ''; 
 
     constructor(
         private formBuilder: FormBuilder,
         private route: ActivatedRoute,
         private router: Router,
         private accountService: AccountService,
-        private alertService: AlertService
+        private alertService: AlertService,
+        private cdr: ChangeDetectorRef,
+        private ngZone: NgZone
     ) { }
 
     ngOnInit() {
@@ -28,40 +30,34 @@ export class LoginComponent implements OnInit {
         });
     }
 
-    // Convenience getter for easy access to form fields
     get f() { return this.form.controls; }
 
     onSubmit() {
-    this.submitted = true;
-    this.alertService.clear();
+        this.submitted = true;
+        this.alertService.clear();
 
-    if (this.form.invalid) {
-        return;
-    }
+        if (this.form.invalid) return;
 
-    this.loading = true;
+        this.loading = true;
 
-    // Timeout fallback in case Render is slow
-    const timeout = setTimeout(() => {
-        this.loading = false;
-        this.alertService.error('Server is taking too long to respond. Please try again.');
-    }, 15000);
-
-    this.accountService.login(this.f['email'].value, this.f['password'].value)
-        .pipe(first())
-        .subscribe({
-            next: () => {
-                clearTimeout(timeout);
-                const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/';
-                this.router.navigateByUrl(returnUrl);
-            },
-           error: error => {
-            clearTimeout(timeout);
-            this.errorMessage = error?.toString().toLowerCase().includes('verify')
-        ? 'Your email is not verified. Please check your email for verification instructions.'
-        : error;
-             this.loading = false;
-            }
-        });
+        this.accountService.login(this.f['email'].value, this.f['password'].value)
+            .pipe(first())
+            .subscribe({
+                next: () => {
+                    const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/';
+                    this.router.navigateByUrl(returnUrl);
+                },
+                error: error => {
+                const msg = error?.toString() || '';
+                    if (msg.toLowerCase().includes('verify') || msg.toLowerCase().includes('verified')) {
+                        this.errorMessage = 'Your email is not verified. Please check your inbox for the verification link.';
+                 } else if (msg.toLowerCase().includes('incorrect') || msg.toLowerCase().includes('invalid') || msg.toLowerCase().includes('wrong') || msg.toLowerCase().includes('password')) {
+                         this.errorMessage = 'Incorrect email or password.';
+                 } else {
+                         this.errorMessage = msg || 'Login failed. Please try again.';
+                 }
+                        this.loading = false;
+                }
+            });
     }
 }
